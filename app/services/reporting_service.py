@@ -1,60 +1,68 @@
 # ===============================
-# Chapter 1: Imports and Setup
-# ===============================
-# This chapter sets up the environment and dependencies for reporting.
-import os
-import json
-import csv
-from pathlib import Path
-from typing import List, Dict, Any
-
-from jinja2 import Template  # Ensure jinja2 is installed: pip install jinja2
-
-REPORT_DIR = Path("data/reports/latest")
-REPORT_DIR.mkdir(parents=True, exist_ok=True)
-
-# ===============================
-# Chapter 2: Helper Functions
-# ===============================
-# _get_risk_reason should be defined or imported. Here is a placeholder:
-def _get_risk_reason(event, risk):
-    """Developer Note: Replace with real logic for risk reason and description."""
-    return ("Reason not implemented", "Description not implemented")
-
-# ===============================
 # Chapter 3: Main Report Generation
 # ===============================
+from doctest import REPORT_UDIFF
+from click import echo
+from jinja2 import Template
+from typing import Any, Dict, List
+from pathlib import Path
+
+# Define the directory where reports will be saved
+REPORT_DIR = Path("reports")
+REPORT_DIR.mkdir(exist_ok=True)
+
+def _get_risk_reason(event, risk):
+    """
+    Returns a tuple of (reason, description) for a given event and risk score.
+    """
+    if risk >= 7:
+        reason = "High risk detected"
+        description = "This event has a high risk score, indicating a critical issue."
+    elif risk >= 4:
+        reason = "Medium risk detected"
+        description = "This event has a moderate risk score, indicating a potential issue."
+    else:
+        reason = "Low risk detected"
+        description = "This event has a low risk score, indicating minimal concern."
+    return reason, description
+
+
 def generate(events: List[Any], risks: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Generate HTML, CSV, and JSON reports including risk score,
-    reason, description, and risk level (Low/Medium/High).
+    Generate SEA-SEQ Wave Report (HTML, CSV, JSON) with
+    risk score, pattern, tier → business impact mapping.
     """
-    # Attach risk info to events
     enriched = []
     for r in risks:
         event = r["event"]
         risk = r["risk"]
+        pattern = r.get("pattern", "N/A")
 
         # Determine reason + description
         reason, description = _get_risk_reason(event, risk)
 
-        # Assign risk level for reporting
+        # Assign tier + business impact mapping
         if risk >= 7:
             risk_level = "High"
+            business_impact = "Critical Business Impact"
         elif risk >= 4:
             risk_level = "Medium"
+            business_impact = "Moderate Business Impact"
         else:
             risk_level = "Low"
+            business_impact = "Minimal Business Impact"
 
         enriched.append({
-            "timestamp": str(event.timestamp) if hasattr(event, "timestamp") else None,
+            "timestamp": str(getattr(event, "timestamp", None)),
             "page_url": getattr(event, "page_url", None),
             "https": getattr(event, "https", None),
             "num_links": getattr(event, "num_links", None),
             "num_forms": getattr(event, "num_forms", None),
             "has_login_form": getattr(event, "has_login_form", None),
+            "pattern": pattern,
             "risk": risk,
             "risk_level": risk_level,
+            "business_impact": business_impact,
             "risk_reason": reason,
             "description": description,
         })
@@ -71,20 +79,27 @@ def generate(events: List[Any], risks: List[Dict[str, Any]]) -> Dict[str, Any]:
         writer.writeheader()
         writer.writerows(enriched)
 
-    # Write HTML with color coding
+    # Write HTML
     html_template = """
     <html>
       <head>
-        <title>SEA-SEC Report</title>
+        <title>SEA-SEQ Wave Report</title>
         <style>
-          .low { background-color: #d4edda; }      /* light green */
-          .medium { background-color: #fff3cd; }   /* light yellow */
-          .high { background-color: #f8d7da; }     /* light red */
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: #004085; }
+          img.logo { max-height: 80px; }
+          .low { background-color: #d4edda; }
+          .medium { background-color: #fff3cd; }
+          .high { background-color: #f8d7da; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background-color: #f0f4f7; }
         </style>
       </head>
       <body>
-        <h1>SEA-SEC Risk Report</h1>
-        <table border="1" cellspacing="0" cellpadding="4">
+        <img src="../Logo.png" alt="Mojo Consultants Logo" class="logo"/>
+        <h1>SEA-SEQ Wave Report</h1>
+        <table>
           <tr>
             {% for col in records[0].keys() %}
               <th>{{ col }}</th>
@@ -113,15 +128,12 @@ def generate(events: List[Any], risks: List[Dict[str, Any]]) -> Dict[str, Any]:
     with open(html_path, "w") as f:
         f.write(html)
 
-    # ===============================
-    # Chapter 4: Return Summary
-    # ===============================
-    # Developer Note: This return is for FastAPI endpoints.
-    return {
-        "total_events": len(events),
-        "anomalies": sum(1 for r in enriched if r["risk"] >= 7),
-        "report_html_path": str(html_path),
-        "report_csv_path": str(csv_path),
-        "report_json_path": str(json_path),
-        "events": enriched
-    }
+echo(f"Report generated: {html_path}, {csv_path}, {json_path}")
+return {
+    "total_events": len(events),
+    "anomalies": sum(1 for r in enriched if r["risk"] >= 7),
+    "report_html_path": str(html_path),
+    "report_csv_path": str(csv_path),
+    "report_json_path": str(json_path),
+    "events": enriched
+}
