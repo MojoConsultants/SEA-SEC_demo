@@ -14,7 +14,7 @@
     padding: 20px;
   }
   .container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     background: #fff;
     padding: 30px;
@@ -67,13 +67,15 @@
 
 <div class="container">
   <img src="../Logo.png" alt="Mojo Consultants Logo" class="logo"/>
-  <h1>SEA-SEQ Wave Report</h1>
-  <p class="status">Report Date: October 28, 2025 | Target: YourCompany.com</p>
+  <h1>SEA-SEQ Wave Report 🌊 </h1>
+  <p class="status">Report Date: September 28, 2025 | Target: MLBAM Park </p>
 
   <h2>Key Security Issues</h2>
   <table class="finding-table">
     <thead>
       <tr>
+        <th>Timestamp</th>
+        <th>Page URL</th>
         <th>Risk Level</th>
         <th>Risk Score</th>
         <th>Pattern</th>
@@ -81,4 +83,29 @@
         <th>Business Impact</th>
         <th>Action Required</th>
       </tr>
-    <
+    </thead>
+    <tbody>
+      <tr>
+        <td>2025-09-28 14:02</td>
+        <td>https://mlbam-park.b12sites.com/index</td>
+        <td><span class="critical">Critical</span></td>
+        <td>9</td>
+        <td>Data Exposure</td>
+        <td><b>Unprotected Customer Data:</b> Unauthorized access to customer records, including names and emails.</td>
+        <td>Critical Business Impact</td>
+        <td><b>Immediate Action:</b> Block the access point and notify security team.</td>
+      </tr>
+      <tr>
+        <td>2025-09-28 14:05</td>
+        <td>https://mlbam-park.b12sites.com/login</td>
+        <td><span class="high">High</span></td>
+        <td>7</td>
+        <td>Auth Bypass</td>
+        <td><b>Vulnerable Login System:</b> Login page susceptible to attack, allowing possible unauthorized logins.</td>
+        <td>Critical Business Impact</td>
+        <td><b>Urgent Action:</b> Update the login system to prevent attack.</td>
+      </tr>
+      <tr>
+        <td>2025-09-28 14:10</td>
+        <td>https://mlbam-park.b12sites.com/products</td>
+        <td><span class="medium">Medium</span></td>
