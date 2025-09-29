@@ -1,0 +1,29 @@
+services:
+  sea-sec-api:
+    build: .
+    container_name: sea-sec-api
+    ports:
+      - "8000:8000"
+    environment:
+      - TARGET_SITE=https://mlbam-park.b12sites.com
+    volumes:
+      - ./data/reports:/app/data/reports
+    restart: unless-stopped
+    command: [
+      "uvicorn", "app.main:app",
+      "--host", "0.0.0.0",
+      "--port", "8000",
+      "--workers", "2"
+    ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 90s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - sea-sec-net
+
+networks:
+  sea-sec-net:
+    driver: bridge
