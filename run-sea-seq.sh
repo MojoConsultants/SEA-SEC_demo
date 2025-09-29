@@ -64,6 +64,28 @@ docker run --rm -it \
     --openapi "$OPENAPI_FILE" \
     --out reports -v --parallel 4
 
+# -----------------------------
+# SEA-SEQ Docker Quick Start
+# -----------------------------
+
+# Default target site
+TARGET_SITE_URL_DEFAULT="https://mlbam-park.b12sites.com/"
+TARGET_SITE_URL="${TARGET_SITE_URL:-$TARGET_SITE_URL_DEFAULT}"
+
+# Image and container naming
+IMAGE_NAME="sea-seq"
+CONTAINER_NAME="sea-seq-runner"
+
+echo "🔧 Building Docker image: $IMAGE_NAME"
+docker build -t "$IMAGE_NAME" .
+
+echo "🚀 Running SEA-SEQ API in Docker container: $CONTAINER_NAME"
+docker run --rm -it \
+  -e TARGET_SITE_URL="$TARGET_SITE_URL" \
+  -p 8000:8000 \
+  --name "$CONTAINER_NAME" \
+  "$IMAGE_NAME"
+
 
 
 # Step 3: Notify user of completion and report location
