@@ -4,15 +4,16 @@
 FROM golang:1.22 AS builder
 WORKDIR /app
 
-# Copy all project files (Go + tests + configs)
+# Copy dependency manifests first
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the source
 COPY . .
 
-# Initialize modules if missing (safe no-op if go.mod exists)
-RUN if [ ! -f go.mod ]; then go mod init seaseq && go mod tidy; fi
-
-# Download deps and build the CLI
-RUN go mod tidy
+# Build CLI
 RUN go build -o seaseq ./cmd/sea-qa
+
 
 # -----------------------------
 # Stage 2: Runtime with Python + seaseq
