@@ -97,6 +97,41 @@ This repository includes several **detailed user guides** in the [`Userguides/`]
   --api-url https://seaseq.internal/api \
   --api-key abc123XYZ \
   --export parsed.json
-```
+######CLI vs API vs Runne#####```
 
+👉 You need to choose which mode you want as default.
+
+Option A — Default = Runner
+
+If you want Docker to auto-generate a report when launched:
+
+CMD ["python", "runner.py"]
+
+Option B — Default = API (likely safer)
+
+If you want the API as the default (current state), but sometimes run runner:
+
+docker run --rm myimage python runner.py
 ---
+## ✅ Test Reports rendering 
+
+execute the following 
+
+python3 test_render.py
+🔹 How to use all three modes
+🔹 Usage examples
+#####################################
+API (default)
+
+docker run -d -p 8000:8000 sea-seq:latest
+
+
+Run CLI via runner_cli.py
+
+docker run --rm --entrypoint python sea-seq:latest runner_cli.py scan --target demo.com
+
+
+Run Report generator directly
+
+docker run --rm --entrypoint python sea-seq:latest runner_report.py
+
