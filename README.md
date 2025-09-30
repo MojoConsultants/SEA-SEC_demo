@@ -119,17 +119,19 @@ execute the following
 
 python3 test_render.py
 🔹 How to use all three modes
+🔹 Usage examples
+#####################################
+API (default)
 
-CLI (Go binary inside container):
-
-docker run --rm --entrypoint seaseq myimage --help
-
-
-Runner (Python auto-report):
-
-docker run --rm myimage python runner.py
+docker run -d -p 8000:8000 sea-seq:latest
 
 
-API service:
+Run CLI via runner_cli.py
 
-docker run -d -p 8000:8000 myimage
+docker run --rm --entrypoint python sea-seq:latest runner_cli.py scan --target demo.com
+
+
+Run Report generator directly
+
+docker run --rm --entrypoint python sea-seq:latest runner_report.py
+
