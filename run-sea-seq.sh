@@ -1,35 +1,32 @@
 #!/bin/bash
 set -e
 
-CLI_CONTAINER="seaseq-cli"
-API_CONTAINER="seaseq-api"
-
-echo "📦 Checking Go dependencies..."
-if command -v go >/dev/null 2>&1; then
-  go mod tidy
+# Detect docker compose command (new vs old)
+if command -v docker-compose &>/dev/null; then
+  COMPOSE="docker-compose"
 else
-  echo "⚠️ Go not installed locally — skipping local tidy"
+  COMPOSE="docker compose"
 fi
 
-echo "🔧 Building Docker images..."
-docker-compose build --no-cache
+CLI_CONTAINER="seaseq-cli"
+API_CONTAINER="seaseq-api"
 
 case "$1" in
   cli)
     echo "🚀 Running SEA-SEQ CLI..."
-    docker-compose run --rm $CLI_CONTAINER
+    $COMPOSE run --rm $CLI_CONTAINER
     ;;
   api)
     echo "🚀 Running SEA-SEQ API Service on http://localhost:8000 ..."
-    docker-compose up $API_CONTAINER
+    $COMPOSE up $API_CONTAINER
     ;;
   both)
     echo "🚀 Running CLI and API together..."
-    docker-compose up
+    $COMPOSE up
     ;;
   down)
-    echo "🛑 Stopping all containers..."
-    docker-compose down -v
+    echo "🛑 Stopping all containers and removing volumes..."
+    $COMPOSE down -v || true
     ;;
   *)
     echo "Usage: $0 {cli|api|both|down}"
