@@ -1,4 +1,3 @@
-
 services:
   seaseq-cli:
     build:
@@ -16,17 +15,45 @@ services:
       "--parallel", "4",
       "-v"
     ]
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - api    
 
-  seaseq-api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    container_name: seaseq-api
+  api:
+    build: ./api
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      - ./SEA-SEC_demo:/app
+    environment:
+      - PYTHONPATH=/app
+      - TARGET_SITE_URL=https://mlbam-park.b12sites.com/
+
+  cli:
+    build: ./cli
+    command: python cli.py \
+      --spec tests/examples/jsonplaceholder/suite.yaml \
+      --env tests/examples/jsonplaceholder/env.json \
+      --openapi tests/examples/jsonplaceholder/openapi.json \
+      --out reports \
+      --parallel 4 -v
+    volumes:
+      - ./SEA-SEC_demo:/app
     working_dir: /app
     environment:
-      TARGET_SITE_URL: "https://mlbam-park.b12sites.com/"
-  
+      - PYTHONPATH=/app
+    depends_on:   
+      - api       
+  test:
+    build: ./tests
+    command: pytest -v --maxfail=1 --disable-warnings --tb=short
+    volumes:
+      - ./SEA-SEC_demo:/app
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:   
+      - api       
+      - cli 

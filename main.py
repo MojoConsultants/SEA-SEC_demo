@@ -73,6 +73,7 @@ def create_app() -> FastAPI:
 app = create_app()
 
 # Run with:
-# uvicorn main:app --host 0.0.0.0 --port 8000
+command: uvicorn main:api --host 0.0.0.0 --port 8000
+
 # or for development with auto-reload:
 # uvicorn main:app --host   
