@@ -1,3 +1,14 @@
+FROM python:3.11-slim
+RUN useradd -m seauser
+WORKDIR /app
+COPY . /app
+RUN mkdir -p /app/reports /var/log/sea-seq && chown -R seauser:seauser /app/reports /var/log/sea-seq
+USER seauser
+CMD ["python", "runner.py"]
+
+
+
+
 # -----------------------------
 # Stage 1: Build Go CLI (seaseq)
 # -----------------------------
@@ -43,7 +54,7 @@ COPY . .
 EXPOSE 8000
 
 # -----------------------------
-# Stage 3: Final image
+# Stage 3: Final image (Default Mode Runs runner.py)
 # -----------------------------
 FROM api AS final
 
@@ -51,7 +62,14 @@ FROM api AS final
 COPY --from=builder /bin/seaseq /usr/local/bin/seaseq
 
 # Default entrypoint → FastAPI service
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "runner.py"]
+# To run API service instead, use default entrypoint, e.g.:
+  docker run --rm myimage python runner.py
+
+  
 
 # To run CLI instead, override entrypoint, e.g.:
 # docker run --rm --entrypoint seaseq <image_name> --help
+
+docker run -d --name sea-seq -v /host/reports:/app/reports:rw sea-seq:latest
+# docker run -d --name sea-seq -v /host/reports:/app/reports:rw -v /host/logs:/var/log/sea-seq:rw sea-seq:latest
