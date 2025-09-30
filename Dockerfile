@@ -4,19 +4,27 @@
 FROM golang:1.25.1 AS builder
 WORKDIR /app
 
-# Copy only go.mod first
+# Copy go.mod first (for dependency caching)
 COPY go.mod ./
-# Create empty go.sum if missing
 RUN [ -f go.sum ] || echo "" > go.sum
+COPY go.sum ./
 
-# Copy rest of project (this will include go.sum if it exists locally)
+# Copy the rest of the project
 COPY . .
 
-# Download dependencies safely (works even if go.sum was empty)
+# Download dependencies
 RUN go mod tidy && go mod download
 
 # Build CLI binary
-RUN go build -o /bin/seaseq ./cmd/sea-qa
+# Try cmd/sea-qa first; if missing, fallback to repo root
+RUN if [ -d "./cmd/sea-qa" ]; then \
+      go build -o /bin/seaseq ./cmd/sea-qa ; \
+    else \
+      go build -o /bin/seaseq . ; \
+    fi
+
+# Optional: strip binary to reduce size
+RUN strip /bin/seaseq || true
 
 # -----------------------------
 # Stage 2: Python API service
@@ -27,11 +35,11 @@ WORKDIR /app
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
-# Copy Python requirements and install
+# Install Python requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app source
+# Copy application source
 COPY . .
 
 # Expose FastAPI port
@@ -47,3 +55,8 @@ COPY --from=builder /bin/seaseq /usr/local/bin/seaseq
 
 # Default entrypoint → FastAPI service
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# To run CLI instead, override entrypoint in docker run:
+# docker run --entrypoint seaseq <image> <args>
+# Example: docker run --entrypoint seaseq <image> version
+echo
