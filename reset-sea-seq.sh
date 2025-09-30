@@ -1,17 +1,23 @@
 #!/bin/bash
 set -e
 
-# Usage: ./reset-sea-seq.sh [cli|api|both]
+# Detect docker compose command (new vs old)
+if command -v docker-compose &>/dev/null; then
+  COMPOSE="docker-compose"
+else
+  COMPOSE="docker compose"
+fi
+
 TARGET=${1:-both}
 
 echo "🛑 Stopping and cleaning up old containers..."
-docker-compose down -v || true
+$COMPOSE down -v || true
 
 echo "🧹 Pruning Docker system (images, cache, volumes)..."
 docker system prune -af --volumes || true
 
 echo "🔧 Building images from scratch..."
-docker-compose build --no-cache
+$COMPOSE build --no-cache
 
 echo "🚀 Starting SEA-SEQ with target: $TARGET"
 ./run-sea-seq.sh $TARGET
