@@ -2,7 +2,7 @@
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Add extra for Excel/CSV handling
+# Add CSV/Excel parsing deps
 RUN pip install --no-cache-dir pandas openpyxl xlrd
 
 

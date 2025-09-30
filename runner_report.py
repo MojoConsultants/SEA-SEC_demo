@@ -13,8 +13,9 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
+import argparse
 
-import pandas as pd  # for Excel/CSV parsing
+import pandas as pd  # for CSV/Excel parsing
 
 # Import report generator
 from app.services import report_service
@@ -23,7 +24,7 @@ from app.services import report_service
 def load_input(input_path: str) -> (List[Any], List[Dict[str, Any]]):
     """
     Load events/risks from JSON, CSV, or Excel file.
-    Expected schema: must include at least "risk" and "event" fields.
+    Expected schema: must include at least "risk" field.
     """
     input_file = Path(input_path)
     if not input_file.exists():
@@ -44,7 +45,6 @@ def load_input(input_path: str) -> (List[Any], List[Dict[str, Any]]):
     # Convert into expected shape
     events = []
     for r in risks:
-        # Ensure required fields
         if "risk" not in r:
             raise ValueError("Each record must include a 'risk' field")
 
@@ -62,10 +62,23 @@ def load_input(input_path: str) -> (List[Any], List[Dict[str, Any]]):
             },
         )()
         r["event"] = event_stub
+
     return events, risks
 
 
 def main():
+    # CLI args
+    parser = argparse.ArgumentParser(description="SEA-SEQ Report Generator")
+    parser.add_argument(
+        "--input", "-i", type=str, help="Path to input file (JSON, CSV, XLSX)"
+    )
+    parser.add_argument(
+        "--output-dir", "-o", type=str, default="/app/reports",
+        help="Directory where reports will be written (default: /app/reports)"
+    )
+    args = parser.parse_args()
+
+    # Logging
     log_file = "/var/log/sea-seq/runner_report.log"
     logging.basicConfig(
         filename=log_file,
@@ -74,20 +87,15 @@ def main():
     )
     logger = logging.getLogger("runner_report")
 
-    output_dir = "/app/reports"
-    os.makedirs(output_dir, exist_ok=True)
-
-    # Input file can be passed as ENV or CLI arg
-    input_path = os.getenv("INPUT_FILE")
-    if len(sys.argv) > 1:
-        input_path = sys.argv[1]
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         logger.info("Starting SEA-SEQ report generation…")
 
-        if input_path:
-            logger.info(f"Loading input file: {input_path}")
-            events, risks = load_input(input_path)
+        if args.input:
+            logger.info(f"Loading input file: {args.input}")
+            events, risks = load_input(args.input)
         else:
             logger.warning("No input file provided — using dummy data")
             events = []
@@ -97,22 +105,31 @@ def main():
                  "pattern": "SQLi"}
             ]
 
+        # Call generator
         result = report_service.generate(events, risks)
+
+        # Move outputs to requested directory
+        for key in ("report_html_path", "report_csv_path", "report_json_path"):
+            src = Path(result[key])
+            dst = output_dir / src.name
+            if src != dst:
+                src.replace(dst)
+                result[key] = str(dst)
 
         logger.info("✅ Report generated successfully")
         logger.info("HTML: %s", result["report_html_path"])
         logger.info("CSV: %s", result["report_csv_path"])
         logger.info("JSON: %s", result["report_json_path"])
 
-        print("Report generated: - runner_report.py:107")
-        print(f"HTML → {result['report_html_path']} - runner_report.py:108")
-        print(f"CSV  → {result['report_csv_path']} - runner_report.py:109")
-        print(f"JSON → {result['report_json_path']} - runner_report.py:110")
+        print("Report generated: - runner_report.py:124")
+        print(f"HTML → {result['report_html_path']} - runner_report.py:125")
+        print(f"CSV  → {result['report_csv_path']} - runner_report.py:126")
+        print(f"JSON → {result['report_json_path']} - runner_report.py:127")
 
     except Exception as e:
         logger.error("❌ Report generation failed: %s", e)
         logger.debug(traceback.format_exc())
-        print(f"[ERROR] Report generation failed: {e} - runner_report.py:115", file=sys.stderr)
+        print(f"[ERROR] Report generation failed: {e} - runner_report.py:132", file=sys.stderr)
         sys.exit(1)
 
     sys.exit(0)
