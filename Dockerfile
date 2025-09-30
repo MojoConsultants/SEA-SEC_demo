@@ -1,3 +1,11 @@
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Add extra for Excel/CSV handling
+RUN pip install --no-cache-dir pandas openpyxl xlrd
+
+
 # -----------------------------
 # Stage 1: Build Go CLI (seaseq)
 # -----------------------------
