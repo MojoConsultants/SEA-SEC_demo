@@ -1,29 +1,32 @@
+version: "3.9"
+
 services:
-  sea-sec-api:
+  seaseq-cli:
     build: .
-    container_name: sea-sec-api
+    container_name: seaseq-cli
+    command: [
+      "seaseq",
+      "--spec", "tests/examples/jsonplaceholder/suite.yaml",
+      "--env", "tests/examples/jsonplaceholder/env.json",
+      "--openapi", "tests/examples/jsonplaceholder/openapi.json",
+      "--out", "reports",
+      "--parallel", "4",
+      "-v"
+    ]
+    volumes:
+      - .:/app
+    working_dir: /app
+
+  seaseq-api:
+    build: .
+    container_name: seaseq-api
     ports:
       - "8000:8000"
-    environment:
-      - TARGET_SITE=https://mlbam-park.b12sites.com
-    volumes:
-      - ./data/reports:/app/data/reports
-    restart: unless-stopped
     command: [
-      "uvicorn", "app.main:app",
-      "--host", "0.0.0.0",
-      "--port", "8000",
-      "--workers", "2"
+      "uvicorn", "app:app", "--reload", "--host", "0.0.0.0", "--port", "8000"
     ]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 90s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - sea-sec-net
-
-networks:
-  sea-sec-net:
-    driver: bridge
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      TARGET_SITE_URL: "https://mlbam-park.b12sites.com/"

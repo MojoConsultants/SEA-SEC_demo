@@ -1,40 +1,49 @@
 # -----------------------------
-# Stage 1: Build the Go binary
+# Stage 1: Build Go CLI (seaseq)
 # -----------------------------
-FROM golang:1.22 AS builder
+FROM golang:1.25.1 AS builder
 WORKDIR /app
 
-# Copy go.mod first (required)
+# Copy only go.mod first
 COPY go.mod ./
-# Copy go.sum only if present
-# (avoids error when go.sum hasn't been generated yet)
-RUN test -f go.sum || touch go.sum
-COPY go.sum ./
+# Create empty go.sum if missing
+RUN [ -f go.sum ] || echo "" > go.sum
 
-# Download dependencies
-RUN go mod download
-
-# Copy source code
+# Copy rest of project (this will include go.sum if it exists locally)
 COPY . .
 
-# Build CLI
-RUN go build -o seaseq ./cmd/sea-qa
+# Download dependencies safely (works even if go.sum was empty)
+RUN go mod tidy && go mod download
+
+# Build CLI binary
+RUN go build -o /bin/seaseq ./cmd/sea-qa
 
 # -----------------------------
-# Stage 2: Runtime container
+# Stage 2: Python API service
 # -----------------------------
-FROM python:3.11-slim AS runtime
+FROM python:3.11-slim AS api
 WORKDIR /app
 
-# Install system dependencies (adjust as needed)
-RUN apt-get update \
- && apt-get install -y gcc libpq-dev \
- && rm -rf /var/lib/apt/lists/*
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
-# Copy binary and app code from builder
-COPY --from=builder /app/seaseq /usr/local/bin/seaseq
+# Copy Python requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy app source
 COPY . .
 
+# Expose FastAPI port
 EXPOSE 8000
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# -----------------------------
+# Stage 3: Final image selector
+# -----------------------------
+FROM api AS final
+
+# Copy seaseq CLI binary from builder
+COPY --from=builder /bin/seaseq /usr/local/bin/seaseq
+
+# Default entrypoint → FastAPI service
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
