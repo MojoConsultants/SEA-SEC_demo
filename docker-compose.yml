@@ -2,10 +2,14 @@ version: "3.9"
 
 services:
   seaseq-cli:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.cli
     container_name: seaseq-cli
+    volumes:
+      - .:/app
+    working_dir: /app
     command: [
-      "seaseq",
       "--spec", "tests/examples/jsonplaceholder/suite.yaml",
       "--env", "tests/examples/jsonplaceholder/env.json",
       "--openapi", "tests/examples/jsonplaceholder/openapi.json",
@@ -13,20 +17,17 @@ services:
       "--parallel", "4",
       "-v"
     ]
-    volumes:
-      - .:/app
-    working_dir: /app
 
   seaseq-api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     container_name: seaseq-api
     ports:
       - "8000:8000"
-    command: [
-      "uvicorn", "app:app", "--reload", "--host", "0.0.0.0", "--port", "8000"
-    ]
     volumes:
       - .:/app
     working_dir: /app
     environment:
       TARGET_SITE_URL: "https://mlbam-park.b12sites.com/"
+  

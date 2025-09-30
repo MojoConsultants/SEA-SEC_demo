@@ -4,26 +4,23 @@
 FROM golang:1.25.1 AS builder
 WORKDIR /app
 
-# Copy go.mod first (for dependency caching)
+# Copy go.mod first (helps cache dependencies)
 COPY go.mod ./
-RUN [ -f go.sum ] || echo "" > go.sum
-COPY go.sum ./
 
-# Copy the rest of the project
+# Copy entire project (brings in go.sum if present, source code, tests, etc.)
 COPY . .
 
-# Download dependencies
+# Ensure dependencies are up to date (regenerates go.sum if missing)
 RUN go mod tidy && go mod download
 
-# Build CLI binary
-# Try cmd/sea-qa first; if missing, fallback to repo root
+# Build CLI binary (works if main.go is in ./cmd/sea-qa OR repo root)
 RUN if [ -d "./cmd/sea-qa" ]; then \
       go build -o /bin/seaseq ./cmd/sea-qa ; \
     else \
       go build -o /bin/seaseq . ; \
     fi
 
-# Optional: strip binary to reduce size
+# Strip binary to reduce size
 RUN strip /bin/seaseq || true
 
 # -----------------------------
@@ -32,10 +29,10 @@ RUN strip /bin/seaseq || true
 FROM python:3.11-slim AS api
 WORKDIR /app
 
-# System deps
+# Install system deps for building Python packages
 RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
-# Install Python requirements
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -46,17 +43,15 @@ COPY . .
 EXPOSE 8000
 
 # -----------------------------
-# Stage 3: Final image selector
+# Stage 3: Final image
 # -----------------------------
 FROM api AS final
 
-# Copy seaseq CLI binary from builder
+# Copy CLI binary from builder
 COPY --from=builder /bin/seaseq /usr/local/bin/seaseq
 
 # Default entrypoint → FastAPI service
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 
-# To run CLI instead, override entrypoint in docker run:
-# docker run --entrypoint seaseq <image> <args>
-# Example: docker run --entrypoint seaseq <image> version
-echo
+# To run CLI instead, override entrypoint, e.g.:
+# docker run --rm --entrypoint seaseq <image_name> --help

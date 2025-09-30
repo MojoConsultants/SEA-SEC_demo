@@ -1,0 +1,21 @@
+# CLI-only lightweight image
+FROM golang:1.25.1 AS builder
+WORKDIR /app
+
+COPY go.mod ./
+COPY . .
+
+RUN go mod tidy && go mod download
+
+RUN if [ -d "./cmd/sea-qa" ]; then \
+      go build -o /seaseq ./cmd/sea-qa ; \
+    else \
+      go build -o /seaseq . ; \
+    fi
+
+RUN strip /seaseq || true
+
+# Final minimal image
+FROM gcr.io/distroless/base-debian12 AS cli
+COPY --from=builder /seaseq /usr/local/bin/seaseq
+ENTRYPOINT ["seaseq"]
