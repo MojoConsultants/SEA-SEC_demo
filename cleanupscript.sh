@@ -11,6 +11,6 @@ TARGET_DIR="${1:-.}"
 echo "Scanning for .swp files in: $TARGET_DIR"
 
 # Find and remove .swp files
-find "$TARGET_DIR" -type f -name "*.swp" -print -delete
+find "$TARGET_DIR" -type f -name "*.sw" -print -delete
 
 echo "Cleanup complete."
