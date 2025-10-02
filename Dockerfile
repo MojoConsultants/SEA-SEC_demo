@@ -1,10 +1,3 @@
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Add CSV/Excel parsing deps
-RUN pip install --no-cache-dir pandas openpyxl xlrd
-
 
 # -----------------------------
 # Stage 1: Build Go CLI (seaseq)
@@ -65,5 +58,9 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 #
 # Run Report Generator:
 #   docker run --rm --entrypoint python sea-seq:latest runner_report.py
+ARG VERSION
+LABEL version="V${VERSION}"
+LABEL description="SEA-SEQ: Security Evaluation & Analysis - Scanning Framework"
+LABEL maintainer="Reginald Moore <your-email@example.com>"
 
   
