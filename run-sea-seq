@@ -28,7 +28,7 @@ usage() {
 }
 
 # Parse command-line arguments
-PARSED_ARGUMENTS=$(getopt -a -n run-sea-seq -o l:m:vh --long location:,mode:,verbose,help -- "$@")
+PARSED_ARGUMENTS=$(getopt -a --name run-sea-seq -o l:m:vh --long location:,mode:,verbose,help -- "$@")
 VALID_ARGUMENTS=$?
 [ $VALID_ARGUMENTS -ne 0 ] && usage
 

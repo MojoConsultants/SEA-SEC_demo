@@ -1,0 +1,2 @@
+2025-10-01 16:17:11,619 [ERROR] Error reading ./reports/issues.csv: [Errno 2] No such file or directory: './reports/issues.csv' - seaseq_cli.py:75
+2025-10-01 16:32:09,797 [ERROR] Error reading ./reports/issues.csv: [Errno 2] No such file or directory: './reports/issues.csv' - seaseq_cli.py:75

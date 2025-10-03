@@ -1,137 +1,105 @@
-Got it ✅ — here’s the updated **README.md** with a note about the **Userguides folder** so contributors and users know where to find additional documentation.
+# Sea-Seq README
+
+This repository contains Sea-Seq, a penetration testing tool designed to accept a test location, resolve it to IP addresses, run tests via a runner, and serve results through a reporting service. It supports execution via command line, Docker, and API.
 
 ---
 
-# 🚀 Sea-Seq CLI — Quick Start Guide
+## Table of Contents
 
-The **Sea-Seq Validation CLI** helps you validate and upload issue reports to the Sea-Seq API.
-
----
-
-## 📦 Requirements
-
-* macOS / Linux / Windows (with Python 3.8+)
-* Python 3
-* `pip3` for installing dependencies
-
----
-
-## 🔧 Installation
-
-1. **Clone this repo** or download the release ZIP.
-
-   ```bash
-   git clone https://github.com/YOUR_ORG/SEA-SEQ_demo.git
-   cd SEA-SEQ_demo
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   pip3 install -r requirements.txt
-   ```
-
-3. **Make the CLI executable (macOS/Linux only)**
-
-   ```bash
-   chmod +x seaseq_cli.py
-   ```
+- [Overview](#overview)
+- [Motivation & Goals](#motivation--goals)
+- [Project Architecture](#project-architecture)
+  - [Core Components](#core-components)
+  - [Execution Modes](#execution-modes)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Usage](#usage)
+- [Tutorial & Diagram](#tutorial--diagram)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## 🚀 Usage
+## Overview
 
-### Option 1: Run directly with Python
-
-```bash
-python3 seaseq_cli.py --input ./reports/issues.csv --api-url https://seaseq.internal/api --api-key YOUR_API_KEY
-```
-
-### Option 2: Run as an executable
-
-```bash
-./seaseq_cli.py --input ./reports/issues.csv --api-url https://seaseq.internal/api --api-key YOUR_API_KEY
-```
+Sea-Seq is designed to:
+- Accept a test location and map it to target IPs
+- Use a runner to execute penetration tests on those IPs
+- Generate and serve results via a reporting service
+- Provide multiple execution pathways: CLI, Docker, and API
 
 ---
 
-## 📌 Arguments
+## Motivation & Goals
 
-| Option      | Description                            | Required |
-| ----------- | -------------------------------------- | -------- |
-| `--input`   | Path to input file (.csv, .json, .pdf) | ✅        |
-| `--api-url` | Sea-Seq API endpoint URL               | ✅        |
-| `--api-key` | API key for authentication             | ✅        |
-| `--export`  | Optional: Export parsed issues to JSON | ❌        |
+- Provide a flexible penetration testing workflow that can be invoked from different interfaces.
+- Ensure consistent behavior across CLI, Docker, and API usage.
+- Facilitate traceability of test locations to IP targets and results.
 
 ---
 
-## 🖥️ Interactive Mode
+## Project Architecture
 
-If you run the CLI with no arguments, it will prompt you step-by-step:
+### Core Components
 
-```bash
-./seaseq_cli.py
-```
+- **`run-sea-seq`**: Entry point script that orchestrates the end-to-end flow across interfaces.
+- **`runner.py`**: Executes penetration tests against selected IPs (invokes internal scanners/tools).
+- **`reporting_service.py`**: Maps test locations to IPs and handles result delivery (generation, storage, and serving).
 
----
+### Execution Modes
 
-## 📂 Additional Documentation
-
-This repository includes several **detailed user guides** in the [`Userguides/`](Userguides) folder:
-
-* **Quick Start** — how to get up and running
-* **Usage** — advanced options and file formats
-* **Examples** — demo files (`.csv`, `.json`, `.pdf`) you can try immediately
-* **Runbook** — operational best practices
-
-👉 Check the **Userguides folder** if you want more in-depth walkthroughs, examples, or troubleshooting help.
+- **CLI**: Direct command-line invocation for local or CI environments.
+- **Docker**: Containerized execution with Docker-related hooks and configuration.
+- **API**: Programmatic access via an API layer for integration with other systems.
 
 ---
 
-## ✅ Example
+## Getting Started
 
-```bash
-./seaseq_cli.py \
-  --input ./demo/issues.json \
-  --api-url https://seaseq.internal/api \
-  --api-key abc123XYZ \
-  --export parsed.json
-######CLI vs API vs Runne#####```
+### Prerequisites
 
-👉 You need to choose which mode you want as default.
+- Python (and/or Go as used by the project) depending on the implementation
+- Docker (for Docker-based execution)
+- Access to required network resources for penetration testing
 
-Option A — Default = Runner
+### Installation
 
-If you want Docker to auto-generate a report when launched:
+1. Clone the repository.
+2. Install dependencies as defined in the project (e.g., `pip install -r requirements.txt` or equivalent).
+3. If using Docker, ensure Docker is running and pull/build the necessary images as described in the Docker setup.
 
-CMD ["python", "runner.py"]
+### Usage
 
-Option B — Default = API (likely safer)
+- CLI: `./run-sea-seq <options>`
+- Docker: `docker-compose up` or `docker run <sea-seq-image> <options>`
+- API: Start the API service and make requests to the endpoints provided in the API documentation
 
-If you want the API as the default (current state), but sometimes run runner:
+> NOTE: Specific commands, options, and environment variables are described in the tutorial and accompanying diagrams below.
 
-docker run --rm myimage python runner.py
 ---
-## ✅ Test Reports rendering 
 
-execute the following 
+## Tutorial & Diagram
 
-python3 test_render.py
-🔹 How to use all three modes
-🔹 Usage examples
-#####################################
-API (default)
+- A diagram illustrating the end-to-end flow (from location input to IP resolution, to testing, to results) is provided in the tutorial folder of the codebase.
+- The diagram visually explains:
+  - How a test location is mapped to IPs
+  - How `run-sea-seq` coordinates the workflow
+  - How `runner.py` interfaces with scanners/tools
+  - How `reporting_service.py` delivers and serves results
+- Where to find it:
+  - Path: `tutorial/Sea-Seq_End-to-End_Flow_Diagram.png` (or within the `tutorial` directory as applicable)
+  - The README references this diagram and briefly describes its elements
 
-docker run -d -p 8000:8000 sea-seq:latest
+---
 
+## Contributing
 
-Run CLI via runner_cli.py
+- Please follow the contribution guidelines in `CONTRIBUTING.md` (if provided).
+- Report issues and submit pull requests with clear descriptions and steps to reproduce.
 
-docker run --rm --entrypoint python sea-seq:latest runner_cli.py scan --target demo.com
+---
 
+## License
 
-Run Report generator directly
-
-docker run --rm --entrypoint python sea-seq:latest runner_report.py
-
+- This project is not icensed. Its pending Copyright. 

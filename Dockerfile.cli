@@ -1,43 +1,31 @@
-# CLI-only lightweight image
-# set working directory
-WORKDIR /app
-
-# copy go mod files first (to leverage caching)
-COPY go.mod go.sum ./
-RUN go mod tidy && go mod download
-
-# now copy the rest of the source code
-COPY . .
-
-# build
-RUN if [ -d "./cmd/sea-qa" ]; then \
-      go build -o /seaseq ./cmd/sea-qa ; \
-    else \
-      go build -o /seaseq . ; \
-    fi
-RUN strip /seaseq || true || true # strip binary to reduce size, ignore errors  if any  occur               
-# final minimal image
-
-
-
-
+# ---------- Stage 1: Build ----------
 FROM golang:1.25.1 AS builder
-WORKDIR /app
 
+WORKDIR /src
+
+# Copy go.mod (go.sum optional — generate with `go mod tidy`)
 COPY go.mod ./
+RUN go mod download
+
+# If you have a go.sum, use this instead:
+# COPY go.mod go.sum ./
+# RUN go mod download
+
+# Copy rest of code
 COPY . .
 
-RUN go mod tidy && go mod download
+# Build static binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o seaqa ./cmd/sea-qa
 
-RUN if [ -d "./cmd/sea-qa" ]; then \
-      go build -o /seaseq ./cmd/sea-qa ; \
-    else \
-      go build -o /seaseq . ; \
-    fi
+# ---------- Stage 2: Runtime ----------
+FROM alpine:3.20
 
-RUN strip /seaseq || true
+WORKDIR /app
+RUN apk add --no-cache ca-certificates
 
-# Final minimal image
-FROM gcr.io/distroless/base-debian12 AS cli
-COPY --from=builder /seaseq /usr/local/bin/seaseq
-ENTRYPOINT ["seaseq"]
+COPY --from=builder /src/seaqa /usr/local/bin/seaqa
+COPY ./tests ./tests
+RUN mkdir -p /app/reports
+
+ENTRYPOINT ["seaqa"]
+CMD ["--help"]
