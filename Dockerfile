@@ -1,66 +1,30 @@
+# ---------- Stage 1: Build ----------
+FROM golang:1.22 AS builder
 
-# -----------------------------
-# Stage 1: Build Go CLI (seaseq)
-# -----------------------------
-FROM golang:1.25.1 AS builder
-WORKDIR /app
+WORKDIR /src
 
+# Copy go.mod only (since go.sum is missing)
 COPY go.mod ./
+RUN go mod download
+
+# Copy everything else
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o seaqa ./cmd/sea-qa
 
-RUN go mod tidy && go mod download
-RUN if [ -d "./cmd/sea-qa" ]; then \
-      go build -o /bin/seaseq ./cmd/sea-qa ; \
-    else \
-      go build -o /bin/seaseq . ; \
-    fi
-RUN strip /bin/seaseq || true
+# ---------- Stage 2: Runtime ----------
+FROM alpine:3.20
 
-# -----------------------------
-# Stage 2: Python API + runners
-# -----------------------------
-FROM python:3.11-slim AS api
 WORKDIR /app
+RUN apk add --no-cache ca-certificates
 
-RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /src/seaqa /usr/local/bin/seaqa
+COPY ./tests ./tests
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Pre-create reports directory
+RUN mkdir -p /app/reports
 
-COPY . .
+ENTRYPOINT ["seaqa"]
 
-# Ensure dirs + logging
-RUN mkdir -p /app/reports /var/log/sea-seq && \
-    useradd -m seauser && \
-    chown -R seauser:seauser /app /var/log/sea-seq
-USER seauser
+CMD ["--help"]
+EXPOSE 8080
 
-EXPOSE 8000
-
-# -----------------------------
-# Stage 3: Final image
-# -----------------------------
-FROM api AS final
-
-COPY --from=builder /bin/seaseq /usr/local/bin/seaseq
-
-# Default: run FastAPI
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-# -----------------------------
-# Usage
-# -----------------------------
-# Run API (default):
-#   docker run -d -p 8000:8000 sea-seq:latest
-#
-# Run CLI:
-#   docker run --rm --entrypoint python sea-seq:latest runner_cli.py scan --target demo.com
-#
-# Run Report Generator:
-#   docker run --rm --entrypoint python sea-seq:latest runner_report.py
-ARG VERSION
-LABEL version="V${VERSION}"
-LABEL description="SEA-SEQ: Security Evaluation & Analysis - Scanning Framework"
-LABEL maintainer="Reginald Moore <your-email@example.com>"
-
-  

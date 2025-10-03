@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Detect docker compose command (new vs old)
+# Detect docker compose command
 if command -v docker-compose &>/dev/null; then
   COMPOSE="docker-compose"
 else
@@ -13,8 +13,18 @@ API_CONTAINER="seaseq-api"
 
 case "$1" in
   cli)
-    echo "🚀 Running SEA-SEQ CLI..."
-    $COMPOSE run --rm $CLI_CONTAINER
+    shift
+    if [ $# -eq 0 ]; then
+      echo "🚀 Running SEA-SEQ CLI with default JSONPlaceholder suite..."
+      $COMPOSE run --rm $CLI_CONTAINER \
+        --spec tests/examples/jsonplaceholder/suite.yaml \
+        --env tests/examples/jsonplaceholder/env.json \
+        --openapi tests/examples/jsonplaceholder/openapi.json \
+        --out reports -v --parallel 4
+    else
+      echo "🚀 Running SEA-SEQ CLI with custom args: $@"
+      $COMPOSE run --rm $CLI_CONTAINER "$@"
+    fi
     ;;
   api)
     echo "🚀 Running SEA-SEQ API Service on http://localhost:8000 ..."
@@ -29,6 +39,6 @@ case "$1" in
     $COMPOSE down -v || true
     ;;
   *)
-    echo "Usage: $0 {cli|api|both|down}"
+    echo "Usage: $0 {cli|api|both|down} [args...]"
     ;;
 esac
